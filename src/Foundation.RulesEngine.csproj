@@ -1,0 +1,27 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFrameworks>netcoreapp2.0;netcoreapp2.1;netcoreapp2.2;netstandard2.0</TargetFrameworks>
+    <GeneratePackageOnBuild>True</GeneratePackageOnBuild>
+    <PackageRequireLicenseAcceptance>True</PackageRequireLicenseAcceptance>
+    <Authors>Erik Knudsen;Ben Chevallereau</Authors>
+    <Owners>eknudsen</Owners>
+    <NeutralLanguage>en-US</NeutralLanguage>
+    <Company />
+    <LangVersion>latest</LangVersion>
+    <Title>Business Rule Engine</Title>
+    <Description>A generic business rules engine for .NET Core</Description>
+    <Copyright>Copyright © 2018 Erik Knudsen</Copyright>
+    <PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
+    <PackageTags>rules engine rules-engine business-rules business-rules-engine</PackageTags>
+    <PackageProjectUrl>https://github.com/erik1066/rules-engine</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/erik1066/rules-engine</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+    <PackageVersion>0.0.1</PackageVersion>
+    <Version>0.0.1</Version>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Newtonsoft.Json" Version="12.0.1" />
+  </ItemGroup>
+</Project>

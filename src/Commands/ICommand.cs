@@ -1,15 +1,15 @@
-using System.IO;
-using System.Text;
-using Newtonsoft.Json.Linq;
+// using System.IO;
+// using System.Text;
+// using Newtonsoft.Json.Linq;
 
-namespace Foundation.RulesEngine.Commands
-{
-    public interface ICommand
-    {
-        ValidationResult Evaluate(object rule, JObject obj);
+// namespace Foundation.RulesEngine.Commands
+// {
+//     public interface ICommand
+//     {
+//         ValidationResult Evaluate(object rule, JObject obj);
 
-        string GetKeyword();
+//         string GetKeyword();
 
-        void SetEngine(IValidator validator);
-    }
-}
+//         void SetEngine(IValidator validator);
+//     }
+// }

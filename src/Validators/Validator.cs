@@ -22,21 +22,26 @@ namespace Foundation.RulesEngine.Validators
 
         private ValidationResults ValidateRules(JObject data, JObject rules)
         {
-            List<string> operators = rules.Properties().Select(p => p.Name).ToList();
+            List<string> operators = rules
+                .Properties()
+                .Select(p => p.Name)
+                .ToList();
+
             var results = new List<ValidationResult>();
 
-            foreach (var op in operators)
+            foreach (var opStr in operators)
             {
-                if (_supportedCommandNames.Contains(op))
+                var rule = rules[opStr];
+                Operator op = GetOperator(opStr);
+
+                if (op != Operator.Undefined)
                 {
-                    var rule = rules[op];
-                    var commandResult = ValidateRule(op, data, rule);
-                    results.AddRange(commandResult);
+                    List<ValidationResult> opResults = ValidateRule(op, data, rule);
+                    results.AddRange(opResults);
                 }
                 else
                 {
-                    Console.WriteLine($"Skipped processing rule: {op}");
-                    // throw new InvalidOperationException($"Command not recognized: {op}");
+                    Console.WriteLine($"Skipped processing unrecognized operator: {opStr}");
                 }
             }
 
@@ -44,7 +49,7 @@ namespace Foundation.RulesEngine.Validators
             return validationResults;
         }
 
-        private List<ValidationResult> ValidateRule(string op, JObject data, JToken rule)
+        private List<ValidationResult> ValidateRule(Operator op, JObject data, JToken rule)
         {
             var results = new List<ValidationResult>();
             var ruleObject = rule is JObject ? ((JObject)rule) : throw new InvalidOperationException("Unrecognized rule definition");
@@ -131,7 +136,7 @@ namespace Foundation.RulesEngine.Validators
             return results;
         }
 
-        private List<ValidationResult> ValidateRuleData(string op, IEnumerable<JToken> dataTokens, JToken ruleToken)
+        private List<ValidationResult> ValidateRuleData(Operator op, IEnumerable<JToken> dataTokens, JToken ruleToken)
         {
             var results = new List<ValidationResult>();
 
@@ -180,12 +185,12 @@ namespace Foundation.RulesEngine.Validators
             return results;
         }
 
-        private ValidationResult ValidateArrayData(string op, IEnumerable<JToken> dataTokens, JArray ruleValueArray)
+        private ValidationResult ValidateArrayData(Operator op, IEnumerable<JToken> dataTokens, JArray ruleValueArray)
         {
             string description = string.Empty;
             bool isValid = true;
 
-            if (op.Equals("$all"))
+            if (op == Operator.All)
             {
                 bool isMissingAny = false;
 
@@ -231,7 +236,7 @@ namespace Foundation.RulesEngine.Validators
                     isValid = false;
                 }
             }
-            else if (op.Equals("$in") || op.Equals("$nin"))
+            else if (op == Operator.In || op == Operator.NotIn)
             {
                 bool dataValueIsInRuleArray = false;
 
@@ -255,18 +260,18 @@ namespace Foundation.RulesEngine.Validators
                     }
                 }
 
-                if (!dataValueIsInRuleArray && op.Equals("$in"))
+                if (!dataValueIsInRuleArray && op == Operator.In)
                 {
                     description = $"Value was not in the expected set of values";
                     isValid = false;
                 }
-                else if (dataValueIsInRuleArray && op.Equals("$nin"))
+                else if (dataValueIsInRuleArray && op == Operator.NotIn)
                 {
                     description = $"Invalid value detected";
-                    isValid = false;                    
+                    isValid = false;
                 }
             }
-            else if (op.Equals("$mod"))
+            else if (op == Operator.Modulus)
             {
                 var valuesArray = ruleValueArray.OfType<JToken>();
 
@@ -303,7 +308,7 @@ namespace Foundation.RulesEngine.Validators
                     isValid = false;
                 }
             }
-            else if (op.Equals("$size"))
+            else if (op == Operator.Size)
             {
                 string expectedSizeStr = ruleValueArray.FirstOrDefault().Value<string>();
 
@@ -337,7 +342,7 @@ namespace Foundation.RulesEngine.Validators
             return result;
         }
 
-        private ValidationResult ValidateSingleData(string op, JValue dataValue, JValue ruleValue)
+        private ValidationResult ValidateSingleData(Operator op, JValue dataValue, JValue ruleValue)
         {
             string description = string.Empty;
             string dataValueStr = dataValue != null ? dataValue.ToString() : null;
@@ -345,7 +350,7 @@ namespace Foundation.RulesEngine.Validators
             string ruleValueStr = ruleValue.ToString();
             bool isValid = true;
 
-            if (op.Equals("$eq"))
+            if (op == Operator.Equal)
             {
                 dataValueStr = dataValueStr ?? "null";
 
@@ -355,7 +360,7 @@ namespace Foundation.RulesEngine.Validators
                     description = $"Value '{dataValueStr}' for field at path '{dataValuePath}' must be {GetOperatorDescription(op)} '{ruleValue}'";
                 }
             }
-            else if (op.Equals("$exists"))
+            else if (op == Operator.Exists)
             {
                 if (ruleValueStr.Equals("true", StringComparison.OrdinalIgnoreCase) && string.IsNullOrEmpty(dataValueStr))
                 {
@@ -368,7 +373,7 @@ namespace Foundation.RulesEngine.Validators
                     description = $"Property '{ruleValueStr}' exists when it shouldn't";
                 }
             }
-            else if (op.Equals("$ne"))
+            else if (op == Operator.NotEqual)
             {
                 dataValueStr = dataValueStr ?? "null";
 
@@ -378,7 +383,7 @@ namespace Foundation.RulesEngine.Validators
                     description = $"Value '{dataValueStr}' for field at path '{dataValuePath}' must be {GetOperatorDescription(op)} '{ruleValue}'";
                 }
             }
-            else if (op.Equals("$gt") || op.Equals("$gte") || op.Equals("$lt") || op.Equals("$lte"))
+            else if (op == Operator.GreaterThan || op == Operator.GreaterThanOrEqualTo || op == Operator.LessThan || op == Operator.LessThanOrEqualTo)
             {
                 if (dataValue.Type == JTokenType.Integer)
                 {
@@ -387,16 +392,16 @@ namespace Foundation.RulesEngine.Validators
 
                     switch (op)
                     {
-                        case "$gt":
+                        case Operator.GreaterThan:
                             isValid = dataValueInt > ruleValueInt;
                             break;
-                        case "$gte":
+                        case Operator.GreaterThanOrEqualTo:
                             isValid = dataValueInt >= ruleValueInt;
                             break;
-                        case "$lt":
+                        case Operator.LessThan:
                             isValid = dataValueInt < ruleValueInt;
                             break;
-                        case "$lte":
+                        case Operator.LessThanOrEqualTo:
                             isValid = dataValueInt <= ruleValueInt;
                             break;
                     }
@@ -413,16 +418,16 @@ namespace Foundation.RulesEngine.Validators
 
                     switch (op)
                     {
-                        case "$gt":
+                        case Operator.GreaterThan:
                             isValid = dataValueDouble > ruleValueDouble;
                             break;
-                        case "$gte":
+                        case Operator.GreaterThanOrEqualTo:
                             isValid = dataValueDouble >= ruleValueDouble;
                             break;
-                        case "$lt":
+                        case Operator.LessThan:
                             isValid = dataValueDouble < ruleValueDouble;
                             break;
-                        case "$lte":
+                        case Operator.LessThanOrEqualTo:
                             isValid = dataValueDouble <= ruleValueDouble;
                             break;
                     }
@@ -439,16 +444,16 @@ namespace Foundation.RulesEngine.Validators
 
                     switch (op)
                     {
-                        case "$gt":
+                        case Operator.GreaterThan:
                             isValid = dataValueBool == true && ruleValueBool == false;
                             break;
-                        case "$gte":
+                        case Operator.GreaterThanOrEqualTo:
                             isValid = !(dataValueBool == false && ruleValueBool == true);
                             break;
-                        case "$lt":
+                        case Operator.LessThan:
                             isValid = dataValueBool == false && ruleValueBool == true;
                             break;
-                        case "$lte":
+                        case Operator.LessThanOrEqualTo:
                             isValid = !(dataValueBool == true && ruleValueBool == false);
                             break;
                     }
@@ -464,16 +469,16 @@ namespace Foundation.RulesEngine.Validators
 
                     switch (op)
                     {
-                        case "$gt":
+                        case Operator.GreaterThan:
                             isValid = stringComparisonResult > 0;
                             break;
-                        case "$gte":
+                        case Operator.GreaterThanOrEqualTo:
                             isValid = stringComparisonResult >= 0;
                             break;
-                        case "$lt":
+                        case Operator.LessThan:
                             isValid = stringComparisonResult < 0;
                             break;
-                        case "$lte":
+                        case Operator.LessThanOrEqualTo:
                             isValid = stringComparisonResult <= 0;
                             break;
                     }
@@ -484,7 +489,7 @@ namespace Foundation.RulesEngine.Validators
                     }
                 }
             }
-            else if (op.Equals("$regex"))
+            else if (op == Operator.RegularExpression)
             {
                 dataValueStr = dataValueStr ?? "";
 
@@ -496,7 +501,7 @@ namespace Foundation.RulesEngine.Validators
                     description = $"Value '{dataValueStr}' for field at path '{dataValuePath}' did not match regular expression {ruleValueStr}";
                 }
             }
-            else if (op.Equals("$type"))
+            else if (op == Operator.Type)
             {
                 dataValueStr = dataValueStr ?? "";
 
@@ -541,24 +546,61 @@ namespace Foundation.RulesEngine.Validators
             return result;
         }
 
-        private string GetOperatorDescription(string op)
+        private string GetOperatorDescription(Operator op)
         {
             switch (op)
             {
-                case "$eq":
+                case Operator.Equal:
                     return "equal to";
-                case "$ne":
+                case Operator.NotEqual:
                     return "not equal to";
-                case "$gt":
+                case Operator.GreaterThan:
                     return "greater than";
-                case "$gte":
+                case Operator.GreaterThanOrEqualTo:
                     return "greater than or equal to";
-                case "$lt":
+                case Operator.LessThan:
                     return "less than";
-                case "$lte":
+                case Operator.LessThanOrEqualTo:
                     return "less than or equal to";
                 default:
                     return "unknown operator";
+            }
+        }
+
+        private Operator GetOperator(string operatorStr)
+        {
+            switch (operatorStr)
+            {
+                case "$all":
+                    return Operator.All;
+                case "$exists":
+                    return Operator.Exists;
+                case "$eq":
+                    return Operator.Equal;
+                case "$ne":
+                    return Operator.NotEqual;
+                case "$gt":
+                    return Operator.GreaterThan;
+                case "$gte":
+                    return Operator.GreaterThanOrEqualTo;
+                case "$lt":
+                    return Operator.LessThan;
+                case "$lte":
+                    return Operator.LessThanOrEqualTo;
+                case "$in":
+                    return Operator.In;
+                case "$nin":
+                    return Operator.NotIn;
+                case "$regex":
+                    return Operator.RegularExpression;
+                case "$mod":
+                    return Operator.Modulus;
+                case "$size":
+                    return Operator.Size;
+                case "$type":
+                    return Operator.Type;
+                default:
+                    return Operator.Undefined;
             }
         }
     }

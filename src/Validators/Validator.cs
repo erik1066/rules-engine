@@ -1,20 +1,14 @@
 using System;
 using System.Collections.Generic;
-using System.IO;
 using System.Linq;
-using System.Text;
 using System.Text.RegularExpressions;
-
 using Newtonsoft.Json.Linq;
-
 using Foundation.RulesEngine.Models;
 
 namespace Foundation.RulesEngine.Validators
 {
-    public sealed class Validator
+    public sealed class Validator : IValidator
     {
-        private static readonly HashSet<string> _supportedCommandNames = new HashSet<string>() { "$all", "$exists", "$eq", "$ne", "$gt", "$gte", "$lt", "$lte", "$in", "$nin", "$regex", "$mod", "$size", "$type" };
-
         public ValidationResults Validate(JObject data, JObject rules)
         {
             return ValidateRules(data, rules);

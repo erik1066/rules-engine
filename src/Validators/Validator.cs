@@ -4,6 +4,7 @@ using System.Linq;
 using System.Text.RegularExpressions;
 using Newtonsoft.Json.Linq;
 using Foundation.RulesEngine.Models;
+using System.Globalization;
 
 namespace Foundation.RulesEngine.Validators
 {
@@ -35,7 +36,12 @@ namespace Foundation.RulesEngine.Validators
                 }
                 else
                 {
-                    Console.WriteLine($"Skipped processing unrecognized operator: {opStr}");
+                    var undefinedRuleError = new ValidationResult(false)
+                    {
+                        Description = $"Unrecognised rule: {opStr}",
+                        Operator = opStr
+                    };
+                    results.Add(undefinedRuleError);
                 }
             }
 
@@ -531,6 +537,21 @@ namespace Foundation.RulesEngine.Validators
                     description = $"Value '{dataValueStr}' did not match expected type {dataValue.Type}";
                 }
             }
+            else if (op == Operator.DateFormat)
+            {
+                var dateString = dataValueStr = dataValueStr ?? "";
+                CultureInfo culture = System.Globalization.CultureInfo.InvariantCulture;//
+                isValid = DateTime.TryParseExact(dateString, ruleValueStr, culture, DateTimeStyles.None, out _);
+                if (!isValid)
+                {
+                    description = $"Value '{dateString}' did not match date format '{ruleValueStr}'";
+                }
+            }
+            else
+            {
+                isValid = false;
+                description = "Unsupported rule: " + op.ToString();
+            }
 
             var result = new ValidationResult(isValid);
             if (isValid == false)
@@ -593,6 +614,8 @@ namespace Foundation.RulesEngine.Validators
                     return Operator.Size;
                 case "$type":
                     return Operator.Type;
+                case "$dateFormat":
+                    return Operator.DateFormat;
                 default:
                     return Operator.Undefined;
             }

@@ -36,6 +36,8 @@ namespace Foundation.RulesEngine.Models
         [EnumMember(Value = "$size")]
         Size,
         [EnumMember(Value = "$type")]
-        Type
+        Type,
+        [EnumMember(Value = "$dateFormat")]
+        DateFormat,
     }
 }

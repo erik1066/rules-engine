@@ -156,7 +156,6 @@ namespace Foundation.RulesEngine.Validators
 
                         if (dataObjectProperty.Name.Equals(ruleProperty.Name))
                         {
-
                             if (ruleProperty.Value is JValue)
                             {
                                 var dataValue = dataObjectProperty.Value as JValue;
